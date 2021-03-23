@@ -1,6 +1,8 @@
 import feedparser
 import time
 from .consts import *
+from newspaper import Article
+from tldextract import extract
 
 
 class Feed:
@@ -9,14 +11,14 @@ class Feed:
     """
 
     def __init__(self, feed_dict: dict):
-        self.missing_fields = None  # todo
-        self.source_site = None  # todo
-        self.entries = None  # todo
-        self.title = None
+        self.missing_fields = None  # Missing fields that aggregator needs to fill
+        self.source_site = None  # Source site of the feed
+        self.entries = None  # The actual articles entries
+        self.title = None  # The title of the feed itself
 
         self.parse_feed_params(feed_dict)
 
-    def parse_feed_params(self, feed_dict: dict):
+    def parse_feed_params(self, feed_dict: dict) -> None:
         """
 
         :param feed_dict:
@@ -36,7 +38,7 @@ class Aggregator:
     """
 
     def __init__(self):
-        self.feeds = None  # todo
+        self._feeds = None  # todo
 
     def aggregate(self):
         """
@@ -44,8 +46,29 @@ class Aggregator:
         """
         self.update_feeds()
 
-        for feed_dict in self.feeds:
+        for feed_dict in self._feeds:
+            """
+            """
             feed = Feed(feed_dict)
+
+            print(feed.title)
+
+            for entry in feed.entries:
+                """
+                """
+                entry_url = entry.link
+
+                article = self.parse_article_nltk(entry_url)
+
+                title = entry.title
+                parsed_date = entry.published_parsed
+                time_to_read = self.calculate_time_to_read(article.text)
+
+                """ changing the date format to what we use on django side."""
+                published_date = time.strftime(DATE_FORMAT, parsed_date)
+
+                summary = article.summary if MISSING_SUMMARY in feed.missing_fields else entry.description
+                source_site_name = self.parse_source_site_from_url(entry_url)
 
     # region receiver
 
@@ -53,6 +76,39 @@ class Aggregator:
         """
         todo
         """
+
+    # endregion
+
+    # region parser
+
+    @staticmethod
+    def parse_article_nltk(url: str) -> Article:
+        article = Article(url)
+        article.download()
+        article.parse()
+        article.nlp()
+
+        return article
+
+    @staticmethod
+    def calculate_time_to_read(text: str) -> int:
+        """
+        Calculates read time with the average read time of {X} WPM
+        From the given article text
+        :param text: the article text
+        :return: read time in minutes
+        """
+        return len(text.split()) // WORDS_PER_MINUTE
+
+    @staticmethod
+    def parse_source_site_from_url(url: str) -> str:
+        """
+        Extracting the name of the site from the whole url
+        :param url: url of a given article
+        :return: the name of the domain
+        Example - http://www.medicinenet.com/script/main/art.asp?articlekey=248973 -> medicinenet
+        """
+        return extract(url).domain
 
     # endregion
 

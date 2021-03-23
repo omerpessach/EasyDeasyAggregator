@@ -1,5 +1,18 @@
 
 
+# region general
+
+WORDS_PER_MINUTE = 150
+
+# endregion
+
+# region formats
+
+DATE_FORMAT = "%Y-%m-%d"
+
+# endregion
+
+
 # region requests consts
 
 MISSING_FIELDS = 'missing_fields'
