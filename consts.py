@@ -1,5 +1,23 @@
 
 
+# region API endpoints
+
+API_ROOT = 'http://127.0.0.1:8000/api/'
+ARTICLES_URL = API_ROOT + 'articles/'
+FEED_URL = API_ROOT + 'feeds/'
+
+# endregion
+
+
+# region prints
+
+ARTICLE_DATA_PRINT = 'POSTing data:\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n'
+SUCCESSFUL_POST_PRINT = 'Successfully POSTed'
+ERROR_PRINT = 'There was an error POSTing'
+
+# endregion
+
+
 # region general
 
 WORDS_PER_MINUTE = 150

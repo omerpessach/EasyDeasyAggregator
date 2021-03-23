@@ -2,3 +2,4 @@ tldextract
 feedparser
 requests
 newspaper3k
+attrdict
