@@ -170,7 +170,3 @@ class Aggregator:
         return extract(url).domain
 
     # endregion
-
-
-if __name__ == '__main__':
-    aggregate()
