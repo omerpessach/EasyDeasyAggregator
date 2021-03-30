@@ -1,11 +1,29 @@
 import feedparser
 import time
-from .consts import *
+from utils.consts import *
 from newspaper import Article
 from tldextract import extract
 from attrdict import AttrDict
 import requests
-from .data_sources import data_django_feed
+from utils.data_sources import data_django_feed
+from marshmallow import Schema, fields, post_load
+
+
+class EntrySchema(Schema):
+    """
+    Validating entry
+    """
+    title = fields.Str()
+    url = fields.URL()
+    summary = fields.Str()
+    time_to_read = fields.Int()
+    source_site = fields.Str()
+    published_date = fields.Date()
+    diseases = fields.List(fields.Str())
+
+    @post_load
+    def create_entry(self, data, **kwargs):
+        return AttrDict(**data)
 
 
 class Feed:
@@ -14,10 +32,10 @@ class Feed:
     """
 
     def __init__(self, feed_dict: dict):
+        self.title = None  # The title of the feed itself
         self.missing_fields = None  # Missing fields that aggregator needs to fill
         self.source_site = None  # Source site of the feed
         self.entries = None  # The actual articles entries
-        self.title = None  # The title of the feed itself
 
         self.parse_feed_params(feed_dict)
 
@@ -56,7 +74,7 @@ class Aggregator:
             """
             feed = Feed(feed_dict)
 
-            print(feed)
+            print(f'{feed}\n')
 
             for entry in feed.entries:
                 """
@@ -77,16 +95,18 @@ class Aggregator:
                 summary = article.summary if MISSING_SUMMARY in feed.missing_fields else entry.description
                 source_site_name = self.parse_source_site_from_url(entry_url)
 
-                """ POSTing the data """
-                self.post_article(AttrDict({
+                article_data = EntrySchema().load({
                     TITLE: title,
                     URL: entry_url,
                     SUMMARY: summary,
                     TIME_TO_READ: time_to_read,
                     SOURCE_SITE: source_site_name,
                     DISEASES: ['test_disease'],  # TODO - replace with real diseases
-                    PUBLISHED_DATA: published_date
-                }))
+                    PUBLISHED_DATE: published_date
+                })
+
+                """ POSTing the data """
+                self.post_article(article_data)
 
     # region sender
 
@@ -104,15 +124,16 @@ class Aggregator:
             TIME_TO_READ: article_data.time_to_read,
             SOURCE_SITE: article_data.source_site,
             DISEASES: article_data.diseases,
-            PUBLISHED_DATA: article_data.published_date
+            PUBLISHED_DATE: article_data.published_date
         }
 
         print(ARTICLE_DATA_PRINT.format(article_data.title,
                                         article_data.url,
                                         article_data.published_date,
                                         article_data.source_site,
+                                        article_data.summary,
                                         article_data.time_to_read,
-                                        article_data.diseases))
+                                        ','.join(article_data.diseases)))
 
         response = requests.post(ARTICLES_URL, post_data)
 
@@ -170,3 +191,9 @@ class Aggregator:
         return extract(url).domain
 
     # endregion
+
+
+if __name__ == '__main__':
+    aggr = Aggregator()
+
+    aggr.aggregate()
