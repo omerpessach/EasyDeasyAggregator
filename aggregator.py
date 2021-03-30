@@ -1,29 +1,11 @@
 import feedparser
 import time
 from utils.consts import *
-from newspaper import Article
-from tldextract import extract
-from attrdict import AttrDict
 import requests
 from utils.data_sources import data_django_feed
-from marshmallow import Schema, fields, post_load
-
-
-class EntrySchema(Schema):
-    """
-    Validating entry
-    """
-    title = fields.Str()
-    url = fields.URL()
-    summary = fields.Str()
-    time_to_read = fields.Int()
-    source_site = fields.Str()
-    published_date = fields.Date()
-    diseases = fields.List(fields.Str())
-
-    @post_load
-    def create_entry(self, data, **kwargs):
-        return AttrDict(**data)
+from utils.schemas import EntrySchema
+from attrdict import AttrDict
+from utils.utils import calculate_time_to_read, parse_article_nltk, parse_source_site_from_url
 
 
 class Feed:
@@ -65,6 +47,8 @@ class Aggregator:
     def aggregate(self):
         """
         Main function of the aggregator, it loops through all the updated feeds and aggregates the information!
+
+        todo - cleaner method
         """
         self.update_feeds()
 
@@ -83,17 +67,17 @@ class Aggregator:
                 """
                 entry_url = entry.link
 
-                article = self.parse_article_nltk(entry_url)
+                article = parse_article_nltk(entry_url)
 
                 title = entry.title
                 parsed_date = entry.published_parsed
-                time_to_read = self.calculate_time_to_read(article.text)
+                time_to_read = calculate_time_to_read(article.text)
 
                 """ changing the date format to what we use on django side."""
                 published_date = time.strftime(DATE_FORMAT, parsed_date)
 
                 summary = article.summary if MISSING_SUMMARY in feed.missing_fields else entry.description
-                source_site_name = self.parse_source_site_from_url(entry_url)
+                source_site_name = parse_source_site_from_url(entry_url)
 
                 article_data = EntrySchema().load({
                     TITLE: title,
@@ -148,47 +132,9 @@ class Aggregator:
     def update_feeds(self):
         """
         Updates the aggregator feeds values!
+        todo - implement
         """
         self._feeds = data_django_feed
-
-    # endregion
-
-    # region parser
-
-    @staticmethod
-    def parse_article_nltk(url: str) -> Article:
-        """
-        Parses the article url to Article object with nlp/nltk parameters.
-
-        :param url: url of the given article
-        :return: parsed nltk/nlp Article object
-        """
-        article = Article(url)
-        article.download()
-        article.parse()
-        article.nlp()
-
-        return article
-
-    @staticmethod
-    def calculate_time_to_read(text: str) -> int:
-        """
-        Calculates read time with the average read time of {X} WPM
-        From the given article text
-        :param text: the article text
-        :return: read time in minutes
-        """
-        return len(text.split()) // WORDS_PER_MINUTE
-
-    @staticmethod
-    def parse_source_site_from_url(url: str) -> str:
-        """
-        Extracting the name of the site from the whole url
-        :param url: url of a given article
-        :return: the name of the domain
-        Example - http://www.medicinenet.com/script/main/art.asp?articlekey=248973 -> medicinenet
-        """
-        return extract(url).domain
 
     # endregion
 
