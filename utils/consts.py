@@ -11,7 +11,8 @@ FEED_URL = API_ROOT + 'feeds/'
 
 # region prints
 
-ARTICLE_DATA_PRINT = 'POSTing data:\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n'
+ARTICLE_DATA_PRINT = 'POSTing Data:\nTitle: {0}\nURL: {1}\nDate: {2}\nWebsite: {3}\nSummary: \n{4}\nTime to read: {5}\nDiseases: {6}\n'
+
 SUCCESSFUL_POST_PRINT = 'Successfully POSTed'
 ERROR_PRINT = 'There was an error POSTing'
 
@@ -20,7 +21,7 @@ ERROR_PRINT = 'There was an error POSTing'
 
 # region general
 
-WORDS_PER_MINUTE = 150
+WORDS_PER_MINUTE = 120
 
 # endregion
 
@@ -39,7 +40,7 @@ TITLE = 'title'
 URL = 'url'
 SUMMARY = 'summary'
 TIME_TO_READ = 'time_to_read'
-PUBLISHED_DATA = 'published_date'
+PUBLISHED_DATE = 'published_date'
 IMG = 'img'
 SOURCE_SITE = 'source_site'
 DISEASES = 'diseases'

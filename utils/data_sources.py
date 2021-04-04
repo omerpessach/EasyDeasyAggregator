@@ -1,4 +1,4 @@
-from .consts import *
+from utils.consts import *
 
 
 data_django_feed = [
