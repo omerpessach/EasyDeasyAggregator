@@ -16,4 +16,4 @@ class EntrySchema(Schema):
 
     @post_load
     def create_entry(self, data, **kwargs):
-        return AttrDict(**data)
+        return data

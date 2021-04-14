@@ -4,7 +4,7 @@ from utils.consts import *
 import requests
 from utils.data_sources import data_django_feed
 from utils.schemas import EntrySchema
-from attrdict import AttrDict
+from pprint import pformat
 from utils.utils import calculate_time_to_read, parse_article_nltk, parse_source_site_from_url
 
 
@@ -36,6 +36,66 @@ class Feed:
         return self.title
 
 
+class Entry:
+    """
+    Represents entry item
+    """
+
+    schema = EntrySchema
+
+    def __init__(self, entry_data):
+        self.as_article = None  # entry parsed as Article object
+
+        self.title = None  # title of the entry
+        self.url = None  # url of the entry
+        self.date = None  # published date of the entry
+        self.time_to_read = None  # time it takes to read the entry
+        self.summary = None  # description/summary of the entry
+        self.site = None  # the source website name
+        self.article_data = None  # the complete article data dict
+
+        self.parse_entry_params(entry_data)
+
+    def parse_entry_params(self, entry_data) -> None:
+        """
+        Parsing the entry values to the instance object upon creation
+        """
+        self.url = entry_data.link
+
+        self.as_article = parse_article_nltk(self.url)
+
+        self.site = parse_source_site_from_url(self.url)
+        self.title = entry_data.title
+        self.date = time.strftime(DATE_FORMAT, entry_data.published_parsed)
+        self.time_to_read = calculate_time_to_read(self.as_article.text)
+        self.summary = self.as_article.summary
+
+        self.article_data = self.schema().load({
+            TITLE: self.title,
+            URL: self.url,
+            SUMMARY: self.summary,
+            TIME_TO_READ: self.time_to_read,
+            SOURCE_SITE: self.site,
+            DISEASES: ['test_disease'],  # TODO - replace with real diseases
+            PUBLISHED_DATE: self.date
+        })
+
+    def post(self):
+        """
+        Posts the entry to the server
+        """
+        print(f'POSTing - \n{self}\n')
+
+        response = requests.post(ARTICLES_URL, self.article_data)
+
+        print_message = SUCCESSFUL_POST_PRINT if response.ok else ERROR_PRINT
+
+        print(print_message)
+
+    def __str__(self):
+        return pformat(self.article_data)
+
+
 class Aggregator:
     """
     Responsible for aggregating data and updating the server with the newest articles and researches!
@@ -46,86 +106,19 @@ class Aggregator:
 
     def aggregate(self):
         """
-        Main function of the aggregator, it loops through all the updated feeds and aggregates the information!
-
-        todo - cleaner method
+        Main function of the aggregator, it loops through all feeds, parses them and their entries, and updates
+        the server!
         """
         self.update_feeds()
 
         for feed_dict in self._feeds:
-            """
-            Looping through all the feeds, each feed is dict from the API response
-            """
             feed = Feed(feed_dict)
 
             print(f'{feed}\n')
 
-            for entry in feed.entries:
-                """
-                Flow per entry:
-                parsing the entry default params -> parsing the complicated params -> filling missing fields -> POSTing
-                """
-                entry_url = entry.link
-
-                article = parse_article_nltk(entry_url)
-
-                title = entry.title
-                parsed_date = entry.published_parsed
-                time_to_read = calculate_time_to_read(article.text)
-
-                """ changing the date format to what we use on django side."""
-                published_date = time.strftime(DATE_FORMAT, parsed_date)
-
-                summary = article.summary if MISSING_SUMMARY in feed.missing_fields else entry.description
-                source_site_name = parse_source_site_from_url(entry_url)
-
-                article_data = EntrySchema().load({
-                    TITLE: title,
-                    URL: entry_url,
-                    SUMMARY: summary,
-                    TIME_TO_READ: time_to_read,
-                    SOURCE_SITE: source_site_name,
-                    DISEASES: ['test_disease'],  # TODO - replace with real diseases
-                    PUBLISHED_DATE: published_date
-                })
-
-                """ POSTing the data """
-                self.post_article(article_data)
-
-    # region sender
-
-    @staticmethod
-    def post_article(article_data: AttrDict):
-        """
-        Packs the article data and POSTs it to the server
-
-        * must have all the data before POSTing *
-        """
-        post_data = {
-            TITLE: article_data.title,
-            URL: article_data.url,
-            SUMMARY: article_data.summary,
-            TIME_TO_READ: article_data.time_to_read,
-            SOURCE_SITE: article_data.source_site,
-            DISEASES: article_data.diseases,
-            PUBLISHED_DATE: article_data.published_date
-        }
-
-        print(ARTICLE_DATA_PRINT.format(article_data.title,
-                                        article_data.url,
-                                        article_data.published_date,
-                                        article_data.source_site,
-                                        article_data.summary,
-                                        article_data.time_to_read,
-                                        ','.join(article_data.diseases)))
-
-        response = requests.post(ARTICLES_URL, post_data)
-
-        print_message = SUCCESSFUL_POST_PRINT if response.ok else ERROR_PRINT
-
-        print(print_message)
-
-    # endregion
+            for entry_data in feed.entries:
+                entry = Entry(entry_data)
+                entry.post()
 
     # region receiver
 
