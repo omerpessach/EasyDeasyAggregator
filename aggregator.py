@@ -6,6 +6,7 @@ from utils.data_sources import data_django_feed
 from utils.schemas import EntrySchema
 from pprint import pformat
 from utils.utils import calculate_time_to_read, parse_article_nltk, parse_source_site_from_url
+from requests import HTTPError, ConnectionError
 
 
 class Feed:
@@ -86,11 +87,11 @@ class Entry:
         """
         print(f'POSTing - \n{self}\n')
 
-        response = requests.post(ARTICLES_URL, self.article_data)
-
-        print_message = SUCCESSFUL_POST_PRINT if response.ok else ERROR_PRINT
-
-        print(print_message)
+        try:
+            response = requests.post(ARTICLES_URL, self.article_data)
+            response.raise_for_status()
+        except (HTTPError, ConnectionError) as e:
+            print(e)
 
     def __str__(self):
         return pformat(self.article_data)
@@ -120,16 +121,17 @@ class Aggregator:
                 entry = Entry(entry_data)
                 entry.post()
 
-    # region receiver
-
     def update_feeds(self):
         """
         Updates the aggregator feeds values!
-        todo - implement
         """
         self._feeds = data_django_feed
 
-    # endregion
+        try:
+            response = requests.get(FEED_URL)
+            response.raise_for_status()
+        except (HTTPError, ConnectionError) as e:
+            print(e)
 
 
 if __name__ == '__main__':

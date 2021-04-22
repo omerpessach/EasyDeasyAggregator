@@ -9,16 +9,6 @@ FEED_URL = API_ROOT + 'feeds/'
 # endregion
 
 
-# region prints
-
-ARTICLE_DATA_PRINT = 'POSTing Data:\nTitle: {0}\nURL: {1}\nDate: {2}\nWebsite: {3}\nSummary: \n{4}\nTime to read: {5}\nDiseases: {6}\n'
-
-SUCCESSFUL_POST_PRINT = 'Successfully POSTed'
-ERROR_PRINT = 'There was an error POSTing'
-
-# endregion
-
-
 # region general
 
 WORDS_PER_MINUTE = 120
