@@ -11,7 +11,7 @@ class EntrySchema(Schema):
     summary = fields.Str()
     time_to_read = fields.Int()
     source_site = fields.Str()
-    published_date = fields.Date()
+    published_date = fields.Str()
     diseases = fields.List(fields.Str())
 
     @post_load

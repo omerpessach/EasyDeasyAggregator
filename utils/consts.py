@@ -31,19 +31,8 @@ URL = 'url'
 SUMMARY = 'summary'
 TIME_TO_READ = 'time_to_read'
 PUBLISHED_DATE = 'published_date'
-IMG = 'img'
 SOURCE_SITE = 'source_site'
 DISEASES = 'diseases'
-ID = 'id'
-NAME = 'name'
 
 # endregion
 
-
-# region missing fields types
-
-MISSING_IMAGE = 'i'
-MISSING_WEBSITE = 'w'
-MISSING_SUMMARY = 's'
-
-# endregion
